@@ -183,12 +183,14 @@ namespace CUDAWrappers
     /**
      * Solve and analysis structure for the lower triangular matrix $L$.
      */
-    csrsv2Info_t info_L;
+    // csrsv2Info_t info_L;
+    cusparseSpSVDescr_t info_L;
 
     /**
      * Solve and analysis structure for the upper triangular matrix $L^T$.
      */
-    csrsv2Info_t info_Lt;
+    // csrsv2Info_t info_Lt;
+    cusparseSpSVDescr_t info_Lt;
 
     /**
      * Pointer to the matrix this object was initialized with.
@@ -400,12 +402,14 @@ namespace CUDAWrappers
     /**
      * Solve and analysis structure for the lower triangular matrix $L$.
      */
-    csrsv2Info_t info_L;
+    // csrsv2Info_t info_L;
+    cusparseSpSVDescr_t info_L;
 
     /**
      * Solve and analysis structure for the upper triangular matrix $U$.
      */
-    csrsv2Info_t info_U;
+    // csrsv2Info_t info_U;
+    cusparseSpSVDescr_t info_U;
 
     /**
      * Pointer to the matrix this object was initialized with.

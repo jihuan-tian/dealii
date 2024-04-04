@@ -32,12 +32,12 @@ namespace
                     int                      m,
                     int                      nnz,
                     const cusparseMatDescr_t descrA,
-                    Number *                 csrValA_valM,
-                    const int *              csrRowPtrA,
-                    const int *              csrColIndA,
+                    Number                  *csrValA_valM,
+                    const int               *csrRowPtrA,
+                    const int               *csrColIndA,
                     csrilu02Info_t           info,
                     cusparseSolvePolicy_t    policy,
-                    void *                   pBuffer)
+                    void                    *pBuffer)
   {
     AssertThrow(false, ExcNotImplemented());
     return CUSPARSE_STATUS_INVALID_VALUE;
@@ -49,12 +49,12 @@ namespace
                            int                      m,
                            int                      nnz,
                            const cusparseMatDescr_t descrA,
-                           float *                  csrValA_valM,
-                           const int *              csrRowPtrA,
-                           const int *              csrColIndA,
+                           float                   *csrValA_valM,
+                           const int               *csrRowPtrA,
+                           const int               *csrColIndA,
                            csrilu02Info_t           info,
                            cusparseSolvePolicy_t    policy,
-                           void *                   pBuffer)
+                           void                    *pBuffer)
   {
     return cusparseScsrilu02(handle,
                              m,
@@ -74,12 +74,12 @@ namespace
                             int                      m,
                             int                      nnz,
                             const cusparseMatDescr_t descrA,
-                            double *                 csrValA_valM,
-                            const int *              csrRowPtrA,
-                            const int *              csrColIndA,
+                            double                  *csrValA_valM,
+                            const int               *csrRowPtrA,
+                            const int               *csrColIndA,
                             csrilu02Info_t           info,
                             cusparseSolvePolicy_t    policy,
-                            void *                   pBuffer)
+                            void                    *pBuffer)
   {
     return cusparseDcsrilu02(handle,
                              m,
@@ -176,12 +176,12 @@ namespace
                                     int                      m,
                                     int                      nnz,
                                     const cusparseMatDescr_t descrA,
-                                    const float *            csrValA,
-                                    const int *              csrRowPtrA,
-                                    const int *              csrColIndA,
+                                    const float             *csrValA,
+                                    const int               *csrRowPtrA,
+                                    const int               *csrColIndA,
                                     csrilu02Info_t           info,
                                     cusparseSolvePolicy_t    policy,
-                                    void *                   pBuffer)
+                                    void                    *pBuffer)
   {
     return cusparseScsrilu02_analysis(handle,
                                       m,
@@ -201,12 +201,12 @@ namespace
                                      int                      m,
                                      int                      nnz,
                                      const cusparseMatDescr_t descrA,
-                                     const double *           csrValA,
-                                     const int *              csrRowPtrA,
-                                     const int *              csrColIndA,
+                                     const double            *csrValA,
+                                     const int               *csrRowPtrA,
+                                     const int               *csrColIndA,
                                      csrilu02Info_t           info,
                                      cusparseSolvePolicy_t    policy,
-                                     void *                   pBuffer)
+                                     void                    *pBuffer)
   {
     return cusparseDcsrilu02_analysis(handle,
                                       m,
@@ -302,9 +302,9 @@ namespace
                                       int                      m,
                                       int                      nnz,
                                       const cusparseMatDescr_t descrA,
-                                      float *                  csrValA,
-                                      const int *              csrRowPtrA,
-                                      const int *              csrColIndA,
+                                      float                   *csrValA,
+                                      const int               *csrRowPtrA,
+                                      const int               *csrColIndA,
                                       csrilu02Info_t           info,
                                       int *pBufferSizeInBytes)
   {
@@ -325,9 +325,9 @@ namespace
                                        int                      m,
                                        int                      nnz,
                                        const cusparseMatDescr_t descrA,
-                                       double *                 csrValA,
-                                       const int *              csrRowPtrA,
-                                       const int *              csrColIndA,
+                                       double                  *csrValA,
+                                       const int               *csrRowPtrA,
+                                       const int               *csrColIndA,
                                        csrilu02Info_t           info,
                                        int *pBufferSizeInBytes)
   {
@@ -419,12 +419,12 @@ namespace
                           int                      m,
                           int                      nnz,
                           const cusparseMatDescr_t descrA,
-                          float *                  csrValA_valM,
-                          const int *              csrRowPtrA,
-                          const int *              csrColIndA,
+                          float                   *csrValA_valM,
+                          const int               *csrRowPtrA,
+                          const int               *csrColIndA,
                           csric02Info_t            info,
                           cusparseSolvePolicy_t    policy,
-                          void *                   pBuffer)
+                          void                    *pBuffer)
   {
     return cusparseScsric02(handle,
                             m,
@@ -444,12 +444,12 @@ namespace
                            int                      m,
                            int                      nnz,
                            const cusparseMatDescr_t descrA,
-                           double *                 csrValA_valM,
-                           const int *              csrRowPtrA,
-                           const int *              csrColIndA,
+                           double                  *csrValA_valM,
+                           const int               *csrRowPtrA,
+                           const int               *csrColIndA,
                            csric02Info_t            info,
                            cusparseSolvePolicy_t    policy,
-                           void *                   pBuffer)
+                           void                    *pBuffer)
   {
     return cusparseDcsric02(handle,
                             m,
@@ -534,7 +534,7 @@ namespace
                         const Number * /*csrValA*/,
                         const int * /*csrRowPtrA*/,
                         const int * /*csrColIndA*/,
-                        csrsv2Info_t /*info*/,
+                        cusparseSpSVDescr_t /*info*/,
                         const Number * /*x*/,
                         Number * /*y*/,
                         cusparseSolvePolicy_t /*policy*/,
@@ -550,31 +550,94 @@ namespace
                                cusparseOperation_t      transA,
                                int                      m,
                                int                      nnz,
-                               const float *            alpha,
-                               const cusparseMatDescr_t descra,
-                               const float *            csrValA,
-                               const int *              csrRowPtrA,
-                               const int *              csrColIndA,
-                               csrsv2Info_t             info,
-                               const float *            x,
-                               float *                  y,
+                               const float             *alpha,
+                               const cusparseMatDescr_t descrA,
+                               const float             *csrValA,
+                               const int               *csrRowPtrA,
+                               const int               *csrColIndA,
+                               cusparseSpSVDescr_t      info,
+                               const float             *x,
+                               float                   *y,
                                cusparseSolvePolicy_t    policy,
-                               void *                   pBuffer)
+                               void                    *pBuffer)
   {
-    return cusparseScsrsv2_solve(handle,
-                                 transA,
-                                 m,
-                                 nnz,
-                                 alpha,
-                                 descra,
-                                 csrValA,
-                                 csrRowPtrA,
-                                 csrColIndA,
-                                 info,
-                                 x,
-                                 y,
-                                 policy,
-                                 pBuffer);
+    cusparseStatus_t     status;
+    cusparseSpMatDescr_t matA;
+
+    // Create temporary descriptor for sparse matrix A
+    status = cusparseCreateCsr(
+      &matA,
+      m,
+      m,
+      nnz,
+      (void *)csrRowPtrA,
+      (void *)csrColIndA,
+      (void *)csrValA,
+      (sizeof(csrRowPtrA[0]) == 4) ? CUSPARSE_INDEX_32I : CUSPARSE_INDEX_64I,
+      (sizeof(csrColIndA[0]) == 4) ? CUSPARSE_INDEX_32I : CUSPARSE_INDEX_64I,
+      cusparseGetMatIndexBase(descrA),
+      CUDA_R_32F);
+    AssertCusparse(status);
+
+    // Set FillMode and DiagType for sparse matrix A
+    cusparseFillMode_t fill_mode = cusparseGetMatFillMode(descrA);
+    status                       = cusparseSpMatSetAttribute(matA,
+                                       CUSPARSE_SPMAT_FILL_MODE,
+                                       &fill_mode,
+                                       sizeof(fill_mode));
+    AssertCusparse(status);
+
+    cusparseDiagType_t diag_type = cusparseGetMatDiagType(descrA);
+    status                       = cusparseSpMatSetAttribute(matA,
+                                       CUSPARSE_SPMAT_DIAG_TYPE,
+                                       &diag_type,
+                                       sizeof(diag_type));
+    AssertCusparse(status);
+
+    // Create temporary descriptor for dense vector x & y
+    cusparseDnVecDescr_t vecX, vecY;
+    status = cusparseCreateDnVec(&vecX, m, (void *)x, CUDA_R_32F);
+    AssertCusparse(status);
+    status = cusparseCreateDnVec(&vecY, m, (void *)y, CUDA_R_32F);
+    AssertCusparse(status);
+
+    cusparseStatus_t res_status;
+    res_status = cusparseSpSV_solve(handle,
+                                    transA,
+                                    (void *)alpha,
+                                    matA,
+                                    vecX,
+                                    vecY,
+                                    CUDA_R_32F,
+                                    CUSPARSE_SPSV_ALG_DEFAULT,
+                                    info);
+
+    // Destroy temporary descriptor for sparse matrix A
+    status = cusparseDestroySpMat(matA);
+    AssertCusparse(status);
+
+    // Destroy temporary descriptor for dense vector x & y
+    status = cusparseDestroyDnVec(vecX);
+    AssertCusparse(status);
+    status = cusparseDestroyDnVec(vecY);
+    AssertCusparse(status);
+
+    return res_status;
+
+    // return cusparseScsrsv2_solve(handle,
+    //                              transA,
+    //                              m,
+    //                              nnz,
+    //                              alpha,
+    //                              descra,
+    //                              csrValA,
+    //                              csrRowPtrA,
+    //                              csrColIndA,
+    //                              info,
+    //                              x,
+    //                              y,
+    //                              policy,
+    //                              pBuffer);
   }
 
   template <>
@@ -583,31 +646,93 @@ namespace
                                 cusparseOperation_t      transA,
                                 int                      m,
                                 int                      nnz,
-                                const double *           alpha,
-                                const cusparseMatDescr_t descra,
-                                const double *           csrValA,
-                                const int *              csrRowPtrA,
-                                const int *              csrColIndA,
-                                csrsv2Info_t             info,
-                                const double *           x,
-                                double *                 y,
+                                const double            *alpha,
+                                const cusparseMatDescr_t descrA,
+                                const double            *csrValA,
+                                const int               *csrRowPtrA,
+                                const int               *csrColIndA,
+                                cusparseSpSVDescr_t      info,
+                                const double            *x,
+                                double                  *y,
                                 cusparseSolvePolicy_t    policy,
-                                void *                   pBuffer)
+                                void                    *pBuffer)
   {
-    return cusparseDcsrsv2_solve(handle,
-                                 transA,
-                                 m,
-                                 nnz,
-                                 alpha,
-                                 descra,
-                                 csrValA,
-                                 csrRowPtrA,
-                                 csrColIndA,
-                                 info,
-                                 x,
-                                 y,
-                                 policy,
-                                 pBuffer);
+    cusparseStatus_t     status;
+    cusparseSpMatDescr_t matA;
+
+    // Create temporary descriptor for sparse matrix A
+    status = cusparseCreateCsr(
+      &matA,
+      m,
+      m,
+      nnz,
+      (void *)csrRowPtrA,
+      (void *)csrColIndA,
+      (void *)csrValA,
+      (sizeof(csrRowPtrA[0]) == 4) ? CUSPARSE_INDEX_32I : CUSPARSE_INDEX_64I,
+      (sizeof(csrColIndA[0]) == 4) ? CUSPARSE_INDEX_32I : CUSPARSE_INDEX_64I,
+      cusparseGetMatIndexBase(descrA),
+      CUDA_R_64F);
+    AssertCusparse(status);
+
+    // Set FillMode and DiagType for sparse matrix A
+    cusparseFillMode_t fill_mode = cusparseGetMatFillMode(descrA);
+    status                       = cusparseSpMatSetAttribute(matA,
+                                       CUSPARSE_SPMAT_FILL_MODE,
+                                       &fill_mode,
+                                       sizeof(fill_mode));
+    AssertCusparse(status);
+
+    cusparseDiagType_t diag_type = cusparseGetMatDiagType(descrA);
+    status                       = cusparseSpMatSetAttribute(matA,
+                                       CUSPARSE_SPMAT_DIAG_TYPE,
+                                       &diag_type,
+                                       sizeof(diag_type));
+    AssertCusparse(status);
+
+    // Create temporary descriptor for dense vector x & y
+    cusparseDnVecDescr_t vecX, vecY;
+    status = cusparseCreateDnVec(&vecX, m, (void *)x, CUDA_R_32F);
+    AssertCusparse(status);
+    status = cusparseCreateDnVec(&vecY, m, (void *)y, CUDA_R_32F);
+    AssertCusparse(status);
+
+    cusparseStatus_t res_status;
+    res_status = cusparseSpSV_solve(handle,
+                                    transA,
+                                    (void *)alpha,
+                                    matA,
+                                    vecX,
+                                    vecY,
+                                    CUDA_R_64F,
+                                    CUSPARSE_SPSV_ALG_DEFAULT,
+                                    info);
+
+    // Destroy temporary descriptor for sparse matrix A
+    status = cusparseDestroySpMat(matA);
+    AssertCusparse(status);
+
+    // Destroy temporary descriptor for dense vector x & y
+    status = cusparseDestroyDnVec(vecX);
+    AssertCusparse(status);
+    status = cusparseDestroyDnVec(vecY);
+    AssertCusparse(status);
+
+    return res_status;
+    // return cusparseDcsrsv2_solve(handle,
+    //                              transA,
+    //                              m,
+    //                              nnz,
+    //                              alpha,
+    //                              descra,
+    //                              csrValA,
+    //                              csrRowPtrA,
+    //                              csrColIndA,
+    //                              info,
+    //                              x,
+    //                              y,
+    //                              policy,
+    //                              pBuffer);
   }
 
   /*
@@ -696,7 +821,7 @@ namespace
                            const Number * /*csrValA*/,
                            const int * /*csrRowPtrA*/,
                            const int * /*csrColIndA*/,
-                           csrsv2Info_t /*info*/,
+                           cusparseSpSVDescr_t /*info*/,
                            cusparseSolvePolicy_t /*policy*/,
                            void * /*pBuffer*/)
   {
@@ -711,24 +836,76 @@ namespace
                                   int                      m,
                                   int                      nnz,
                                   const cusparseMatDescr_t descrA,
-                                  const float *            csrValA,
-                                  const int *              csrRowPtrA,
-                                  const int *              csrColIndA,
-                                  csrsv2Info_t             info,
+                                  const float             *csrValA,
+                                  const int               *csrRowPtrA,
+                                  const int               *csrColIndA,
+                                  cusparseSpSVDescr_t      info,
                                   cusparseSolvePolicy_t    policy,
-                                  void *                   pBuffer)
+                                  void                    *pBuffer)
   {
-    return cusparseScsrsv2_analysis(handle,
-                                    transA,
-                                    m,
-                                    nnz,
-                                    descrA,
-                                    csrValA,
-                                    csrRowPtrA,
-                                    csrColIndA,
-                                    info,
-                                    policy,
-                                    pBuffer);
+    float                alpha = 1.0;
+    cusparseStatus_t     status;
+    cusparseSpMatDescr_t matA;
+
+    // Create temporary descriptor for sparse matrix A
+    status = cusparseCreateCsr(
+      &matA,
+      m,
+      m,
+      nnz,
+      (void *)csrRowPtrA,
+      (void *)csrColIndA,
+      (void *)csrValA,
+      (sizeof(csrRowPtrA[0]) == 4) ? CUSPARSE_INDEX_32I : CUSPARSE_INDEX_64I,
+      (sizeof(csrColIndA[0]) == 4) ? CUSPARSE_INDEX_32I : CUSPARSE_INDEX_64I,
+      cusparseGetMatIndexBase(descrA),
+      CUDA_R_32F);
+    AssertCusparse(status);
+
+    // Set FillMode and DiagType for sparse matrix A
+    cusparseFillMode_t fill_mode = cusparseGetMatFillMode(descrA);
+    status                       = cusparseSpMatSetAttribute(matA,
+                                       CUSPARSE_SPMAT_FILL_MODE,
+                                       &fill_mode,
+                                       sizeof(fill_mode));
+    AssertCusparse(status);
+
+    cusparseDiagType_t diag_type = cusparseGetMatDiagType(descrA);
+    status                       = cusparseSpMatSetAttribute(matA,
+                                       CUSPARSE_SPMAT_DIAG_TYPE,
+                                       &diag_type,
+                                       sizeof(diag_type));
+    AssertCusparse(status);
+
+    cusparseStatus_t res_status;
+    res_status = cusparseSpSV_analysis(handle,
+                                       transA,
+                                       &alpha,
+                                       matA,
+                                       NULL,
+                                       NULL,
+                                       CUDA_R_32F,
+                                       CUSPARSE_SPSV_ALG_DEFAULT,
+                                       info,
+                                       pBuffer);
+
+    // Destroy temporary descriptor for sparse matrix A
+    status = cusparseDestroySpMat(matA);
+    AssertCusparse(status);
+
+    return res_status;
+
+    // return cusparseScsrsv2_analysis(handle,
+    //                                 transA,
+    //                                 m,
+    //                                 nnz,
+    //                                 descrA,
+    //                                 csrValA,
+    //                                 csrRowPtrA,
+    //                                 csrColIndA,
+    //                                 info,
+    //                                 policy,
+    //                                 pBuffer);
   }
 
   template <>
@@ -738,24 +915,75 @@ namespace
                                    int                      m,
                                    int                      nnz,
                                    const cusparseMatDescr_t descrA,
-                                   const double *           csrValA,
-                                   const int *              csrRowPtrA,
-                                   const int *              csrColIndA,
-                                   csrsv2Info_t             info,
+                                   const double            *csrValA,
+                                   const int               *csrRowPtrA,
+                                   const int               *csrColIndA,
+                                   cusparseSpSVDescr_t      info,
                                    cusparseSolvePolicy_t    policy,
-                                   void *                   pBuffer)
+                                   void                    *pBuffer)
   {
-    return cusparseDcsrsv2_analysis(handle,
-                                    transA,
-                                    m,
-                                    nnz,
-                                    descrA,
-                                    csrValA,
-                                    csrRowPtrA,
-                                    csrColIndA,
-                                    info,
-                                    policy,
-                                    pBuffer);
+    double               alpha = 1.0;
+    cusparseStatus_t     status;
+    cusparseSpMatDescr_t matA;
+
+    // Create temporary descriptor for sparse matrix A
+    status = cusparseCreateCsr(
+      &matA,
+      m,
+      m,
+      nnz,
+      (void *)csrRowPtrA,
+      (void *)csrColIndA,
+      (void *)csrValA,
+      (sizeof(csrRowPtrA[0]) == 4) ? CUSPARSE_INDEX_32I : CUSPARSE_INDEX_64I,
+      (sizeof(csrColIndA[0]) == 4) ? CUSPARSE_INDEX_32I : CUSPARSE_INDEX_64I,
+      cusparseGetMatIndexBase(descrA),
+      CUDA_R_64F);
+    AssertCusparse(status);
+
+    // Set FillMode and DiagType for sparse matrix A
+    cusparseFillMode_t fill_mode = cusparseGetMatFillMode(descrA);
+    status                       = cusparseSpMatSetAttribute(matA,
+                                       CUSPARSE_SPMAT_FILL_MODE,
+                                       &fill_mode,
+                                       sizeof(fill_mode));
+    AssertCusparse(status);
+
+    cusparseDiagType_t diag_type = cusparseGetMatDiagType(descrA);
+    status                       = cusparseSpMatSetAttribute(matA,
+                                       CUSPARSE_SPMAT_DIAG_TYPE,
+                                       &diag_type,
+                                       sizeof(diag_type));
+    AssertCusparse(status);
+
+    cusparseStatus_t res_status;
+    res_status = cusparseSpSV_analysis(handle,
+                                       transA,
+                                       &alpha,
+                                       matA,
+                                       NULL,
+                                       NULL,
+                                       CUDA_R_64F,
+                                       CUSPARSE_SPSV_ALG_DEFAULT,
+                                       info,
+                                       pBuffer);
+
+    // Destroy temporary descriptor for sparse matrix A
+    status = cusparseDestroySpMat(matA);
+    AssertCusparse(status);
+
+    return res_status;
+    // return cusparseDcsrsv2_analysis(handle,
+    //                                 transA,
+    //                                 m,
+    //                                 nnz,
+    //                                 descrA,
+    //                                 csrValA,
+    //                                 csrRowPtrA,
+    //                                 csrColIndA,
+    //                                 info,
+    //                                 policy,
+    //                                 pBuffer);
   }
 
   /*
@@ -844,12 +1072,12 @@ namespace
                                    int                      m,
                                    int                      nnz,
                                    const cusparseMatDescr_t descrA,
-                                   const float *            csrValA,
-                                   const int *              csrRowPtrA,
-                                   const int *              csrColIndA,
+                                   const float             *csrValA,
+                                   const int               *csrRowPtrA,
+                                   const int               *csrColIndA,
                                    csric02Info_t            info,
                                    cusparseSolvePolicy_t    policy,
-                                   void *                   pBuffer)
+                                   void                    *pBuffer)
   {
     return cusparseScsric02_analysis(handle,
                                      m,
@@ -869,12 +1097,12 @@ namespace
                                     int                      m,
                                     int                      nnz,
                                     const cusparseMatDescr_t descrA,
-                                    const double *           csrValA,
-                                    const int *              csrRowPtrA,
-                                    const int *              csrColIndA,
+                                    const double            *csrValA,
+                                    const int               *csrRowPtrA,
+                                    const int               *csrColIndA,
                                     csric02Info_t            info,
                                     cusparseSolvePolicy_t    policy,
-                                    void *                   pBuffer)
+                                    void                    *pBuffer)
   {
     return cusparseDcsric02_analysis(handle,
                                      m,
@@ -958,7 +1186,7 @@ namespace
                              Number * /*csrValA*/,
                              const int * /*csrRowPtrA*/,
                              const int * /*csrColIndA*/,
-                             csrsv2Info_t /*info*/,
+                             cusparseSpSVDescr_t /*info*/,
                              int * /*pBufferSizeInBytes*/)
   {
     AssertThrow(false, ExcNotImplemented());
@@ -972,22 +1200,73 @@ namespace
                                     int                      m,
                                     int                      nnz,
                                     const cusparseMatDescr_t descrA,
-                                    float *                  csrValA,
-                                    const int *              csrRowPtrA,
-                                    const int *              csrColIndA,
-                                    csrsv2Info_t             info,
-                                    int *                    pBufferSizeInBytes)
+                                    float                   *csrValA,
+                                    const int               *csrRowPtrA,
+                                    const int               *csrColIndA,
+                                    cusparseSpSVDescr_t      info,
+                                    int                     *pBufferSizeInBytes)
   {
-    return cusparseScsrsv2_bufferSize(handle,
-                                      transA,
-                                      m,
-                                      nnz,
-                                      descrA,
-                                      csrValA,
-                                      csrRowPtrA,
-                                      csrColIndA,
-                                      info,
-                                      pBufferSizeInBytes);
+    float                alpha = 1.0;
+    cusparseStatus_t     status;
+    cusparseSpMatDescr_t matA;
+
+    // Create temporary descriptor for sparse matrix A
+    status = cusparseCreateCsr(
+      &matA,
+      m,
+      m,
+      nnz,
+      (void *)csrRowPtrA,
+      (void *)csrColIndA,
+      (void *)csrValA,
+      (sizeof(csrRowPtrA[0]) == 4) ? CUSPARSE_INDEX_32I : CUSPARSE_INDEX_64I,
+      (sizeof(csrColIndA[0]) == 4) ? CUSPARSE_INDEX_32I : CUSPARSE_INDEX_64I,
+      cusparseGetMatIndexBase(descrA),
+      CUDA_R_32F);
+    AssertCusparse(status);
+
+    // Set FillMode and DiagType for sparse matrix A
+    cusparseFillMode_t fill_mode = cusparseGetMatFillMode(descrA);
+    status                       = cusparseSpMatSetAttribute(matA,
+                                       CUSPARSE_SPMAT_FILL_MODE,
+                                       &fill_mode,
+                                       sizeof(fill_mode));
+    AssertCusparse(status);
+
+    cusparseDiagType_t diag_type = cusparseGetMatDiagType(descrA);
+    status                       = cusparseSpMatSetAttribute(matA,
+                                       CUSPARSE_SPMAT_DIAG_TYPE,
+                                       &diag_type,
+                                       sizeof(diag_type));
+    AssertCusparse(status);
+
+    cusparseStatus_t res_status;
+    res_status = cusparseSpSV_bufferSize(handle,
+                                         transA,
+                                         &alpha,
+                                         matA,
+                                         NULL,
+                                         NULL,
+                                         CUDA_R_32F,
+                                         CUSPARSE_SPSV_ALG_DEFAULT,
+                                         info,
+                                         (size_t *)pBufferSizeInBytes);
+
+    // Destroy temporary descriptor for sparse matrix A
+    status = cusparseDestroySpMat(matA);
+    AssertCusparse(status);
+
+    return res_status;
+    // return cusparseScsrsv2_bufferSize(handle,
+    //                                   transA,
+    //                                   m,
+    //                                   nnz,
+    //                                   descrA,
+    //                                   csrValA,
+    //                                   csrRowPtrA,
+    //                                   csrColIndA,
+    //                                   info,
+    //                                   pBufferSizeInBytes);
   }
 
   template <>
@@ -997,22 +1276,73 @@ namespace
                                      int                      m,
                                      int                      nnz,
                                      const cusparseMatDescr_t descrA,
-                                     double *                 csrValA,
-                                     const int *              csrRowPtrA,
-                                     const int *              csrColIndA,
-                                     csrsv2Info_t             info,
+                                     double                  *csrValA,
+                                     const int               *csrRowPtrA,
+                                     const int               *csrColIndA,
+                                     cusparseSpSVDescr_t      info,
                                      int *pBufferSizeInBytes)
   {
-    return cusparseDcsrsv2_bufferSize(handle,
-                                      transA,
-                                      m,
-                                      nnz,
-                                      descrA,
-                                      csrValA,
-                                      csrRowPtrA,
-                                      csrColIndA,
-                                      info,
-                                      pBufferSizeInBytes);
+    double               alpha = 1.0;
+    cusparseStatus_t     status;
+    cusparseSpMatDescr_t matA;
+
+    // Create temporary descriptor for sparse matrix A
+    status = cusparseCreateCsr(
+      &matA,
+      m,
+      m,
+      nnz,
+      (void *)csrRowPtrA,
+      (void *)csrColIndA,
+      (void *)csrValA,
+      (sizeof(csrRowPtrA[0]) == 4) ? CUSPARSE_INDEX_32I : CUSPARSE_INDEX_64I,
+      (sizeof(csrColIndA[0]) == 4) ? CUSPARSE_INDEX_32I : CUSPARSE_INDEX_64I,
+      cusparseGetMatIndexBase(descrA),
+      CUDA_R_64F);
+    AssertCusparse(status);
+
+    // Set FillMode and DiagType for sparse matrix A
+    cusparseFillMode_t fill_mode = cusparseGetMatFillMode(descrA);
+    status                       = cusparseSpMatSetAttribute(matA,
+                                       CUSPARSE_SPMAT_FILL_MODE,
+                                       &fill_mode,
+                                       sizeof(fill_mode));
+    AssertCusparse(status);
+
+    cusparseDiagType_t diag_type = cusparseGetMatDiagType(descrA);
+    status                       = cusparseSpMatSetAttribute(matA,
+                                       CUSPARSE_SPMAT_DIAG_TYPE,
+                                       &diag_type,
+                                       sizeof(diag_type));
+    AssertCusparse(status);
+
+    cusparseStatus_t res_status;
+    res_status = cusparseSpSV_bufferSize(handle,
+                                         transA,
+                                         &alpha,
+                                         matA,
+                                         NULL,
+                                         NULL,
+                                         CUDA_R_64F,
+                                         CUSPARSE_SPSV_ALG_DEFAULT,
+                                         info,
+                                         (size_t *)pBufferSizeInBytes);
+
+    // Destroy temporary descriptor for sparse matrix A
+    status = cusparseDestroySpMat(matA);
+    AssertCusparse(status);
+
+    return res_status;
+    // return cusparseDcsrsv2_bufferSize(handle,
+    //                                   transA,
+    //                                   m,
+    //                                   nnz,
+    //                                   descrA,
+    //                                   csrValA,
+    //                                   csrRowPtrA,
+    //                                   csrColIndA,
+    //                                   info,
+    //                                   pBufferSizeInBytes);
   }
 
   /*
@@ -1097,9 +1427,9 @@ namespace
                                      int                      m,
                                      int                      nnz,
                                      const cusparseMatDescr_t descrA,
-                                     float *                  csrValA,
-                                     const int *              csrRowPtrA,
-                                     const int *              csrColIndA,
+                                     float                   *csrValA,
+                                     const int               *csrRowPtrA,
+                                     const int               *csrColIndA,
                                      csric02Info_t            info,
                                      int *pBufferSizeInBytes)
   {
@@ -1120,9 +1450,9 @@ namespace
                                       int                      m,
                                       int                      nnz,
                                       const cusparseMatDescr_t descrA,
-                                      double *                 csrValA,
-                                      const int *              csrRowPtrA,
-                                      const int *              csrColIndA,
+                                      double                  *csrValA,
+                                      const int               *csrRowPtrA,
+                                      const int               *csrColIndA,
                                       csric02Info_t            info,
                                       int *pBufferSizeInBytes)
   {
@@ -1237,9 +1567,11 @@ namespace CUDAWrappers
     // we need one info for csric02 and two info's for csrsv2
     status = cusparseCreateCsric02Info(&info_M);
     AssertCusparse(status);
-    status = cusparseCreateCsrsv2Info(&info_L);
+    // status = cusparseCreateCsrsv2Info(&info_L);
+    status = cusparseSpSV_createDescr(&info_L);
     AssertCusparse(status);
-    status = cusparseCreateCsrsv2Info(&info_Lt);
+    // status = cusparseCreateCsrsv2Info(&info_Lt);
+    status = cusparseSpSV_createDescr(&info_Lt);
     AssertCusparse(status);
   }
 
@@ -1258,10 +1590,12 @@ namespace CUDAWrappers
     status = cusparseDestroyCsric02Info(info_M);
     AssertNothrowCusparse(status);
 
-    status = cusparseDestroyCsrsv2Info(info_L);
+    // status = cusparseDestroyCsrsv2Info(info_L);
+    status = cusparseSpSV_destroyDescr(info_L);
     AssertNothrowCusparse(status);
 
-    status = cusparseDestroyCsrsv2Info(info_Lt);
+    // status = cusparseDestroyCsrsv2Info(info_Lt);
+    status = cusparseSpSV_destroyDescr(info_Lt);
     AssertNothrowCusparse(status);
   }
 
@@ -1428,7 +1762,7 @@ namespace CUDAWrappers
   template <typename Number>
   void
   PreconditionIC<Number>::vmult(
-    LinearAlgebra::CUDAWrappers::Vector<Number> &      dst,
+    LinearAlgebra::CUDAWrappers::Vector<Number>       &dst,
     const LinearAlgebra::CUDAWrappers::Vector<Number> &src) const
   {
     Assert(P_val_dev != nullptr, ExcNotInitialized());
@@ -1482,7 +1816,7 @@ namespace CUDAWrappers
   template <typename Number>
   void
   PreconditionIC<Number>::Tvmult(
-    LinearAlgebra::CUDAWrappers::Vector<Number> &      dst,
+    LinearAlgebra::CUDAWrappers::Vector<Number>       &dst,
     const LinearAlgebra::CUDAWrappers::Vector<Number> &src) const
   {
     // the constructed preconditioner is symmetric
@@ -1555,9 +1889,11 @@ namespace CUDAWrappers
     // we need one info for csrilu02 and two info's for csrsv2
     status = cusparseCreateCsrilu02Info(&info_M);
     AssertCusparse(status);
-    status = cusparseCreateCsrsv2Info(&info_L);
+    // status = cusparseCreateCsrsv2Info(&info_L);
+    status = cusparseSpSV_createDescr(&info_L);
     AssertCusparse(status);
-    status = cusparseCreateCsrsv2Info(&info_U);
+    // status = cusparseCreateCsrsv2Info(&info_U);
+    status = cusparseSpSV_createDescr(&info_U);
     AssertCusparse(status);
   }
 
@@ -1579,10 +1915,12 @@ namespace CUDAWrappers
     status = cusparseDestroyCsrilu02Info(info_M);
     AssertNothrowCusparse(status);
 
-    status = cusparseDestroyCsrsv2Info(info_L);
+    // status = cusparseDestroyCsrsv2Info(info_L);
+    status = cusparseSpSV_destroyDescr(info_L);
     AssertNothrowCusparse(status);
 
-    status = cusparseDestroyCsrsv2Info(info_U);
+    // status = cusparseDestroyCsrsv2Info(info_U);
+    status = cusparseSpSV_destroyDescr(info_U);
     AssertNothrowCusparse(status);
   }
 
@@ -1748,7 +2086,7 @@ namespace CUDAWrappers
   template <typename Number>
   void
   PreconditionILU<Number>::vmult(
-    LinearAlgebra::CUDAWrappers::Vector<Number> &      dst,
+    LinearAlgebra::CUDAWrappers::Vector<Number>       &dst,
     const LinearAlgebra::CUDAWrappers::Vector<Number> &src) const
   {
     Assert(P_val_dev != nullptr, ExcNotInitialized());
