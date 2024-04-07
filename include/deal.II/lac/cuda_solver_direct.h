@@ -25,6 +25,11 @@
 #  include <deal.II/lac/cuda_vector.h>
 #  include <deal.II/lac/solver_control.h>
 
+// XXX added by wxz
+#  if CUSPARSE_VER_MAJOR > 11
+#    define USE_NEW_API
+#  endif
+
 DEAL_II_NAMESPACE_OPEN
 
 namespace CUDAWrappers

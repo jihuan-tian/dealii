@@ -25,6 +25,11 @@
 
 #ifdef DEAL_II_COMPILER_CUDA_AWARE
 
+// XXX added by wxz
+#  if CUSPARSE_VER_MAJOR > 11
+#    define USE_NEW_API
+#  endif
+
 DEAL_II_NAMESPACE_OPEN
 
 // forward-definition
@@ -122,13 +127,13 @@ namespace CUDAWrappers
      */
     void
     initialize(const SparseMatrix<Number> &matrix,
-               const AdditionalData &      additional_data = AdditionalData());
+               const AdditionalData       &additional_data = AdditionalData());
 
     /**
      * Apply the preconditioner.
      */
     void
-    vmult(LinearAlgebra::CUDAWrappers::Vector<Number> &      dst,
+    vmult(LinearAlgebra::CUDAWrappers::Vector<Number>       &dst,
           const LinearAlgebra::CUDAWrappers::Vector<Number> &src) const;
 
     /**
@@ -136,7 +141,7 @@ namespace CUDAWrappers
      * is the same as vmult().
      */
     void
-    Tvmult(LinearAlgebra::CUDAWrappers::Vector<Number> &      dst,
+    Tvmult(LinearAlgebra::CUDAWrappers::Vector<Number>       &dst,
            const LinearAlgebra::CUDAWrappers::Vector<Number> &src) const;
 
     /**
@@ -180,17 +185,23 @@ namespace CUDAWrappers
      */
     csric02Info_t info_M;
 
-    /**
-     * Solve and analysis structure for the lower triangular matrix $L$.
-     */
-    // csrsv2Info_t info_L;
+/**
+ * Solve and analysis structure for the lower triangular matrix $L$.
+ */
+#  ifdef USE_NEW_API
     cusparseSpSVDescr_t info_L;
+#  else
+    csrsv2Info_t info_L;
+#  endif
 
-    /**
-     * Solve and analysis structure for the upper triangular matrix $L^T$.
-     */
-    // csrsv2Info_t info_Lt;
+/**
+ * Solve and analysis structure for the upper triangular matrix $L^T$.
+ */
+#  ifdef USE_NEW_API
     cusparseSpSVDescr_t info_Lt;
+#  else
+    csrsv2Info_t info_Lt;
+#  endif
 
     /**
      * Pointer to the matrix this object was initialized with.
@@ -226,6 +237,17 @@ namespace CUDAWrappers
      * computing the decomposition.
      */
     std::unique_ptr<void, void (*)(void *)> buffer_dev;
+
+#  ifdef USE_NEW_API
+    /**
+     * NOTE: General API cusparseSpSV calls demands that the external buffer
+     * must not be modified between cusparseSpSV_analysis() and
+     * cusparseSpSV_solve(), therefore we need to store independent buffers
+     * intead of sharing one common buffer like before.
+     */
+    std::unique_ptr<void, void (*)(void *)> buffer_dev_L;
+    std::unique_ptr<void, void (*)(void *)> buffer_dev_Lt;
+#  endif
 
     /**
      * Determine if level information should be generated for the lower
@@ -337,20 +359,20 @@ namespace CUDAWrappers
      */
     void
     initialize(const SparseMatrix<Number> &matrix,
-               const AdditionalData &      additional_data = AdditionalData());
+               const AdditionalData       &additional_data = AdditionalData());
 
     /**
      * Apply the preconditioner.
      */
     void
-    vmult(LinearAlgebra::CUDAWrappers::Vector<Number> &      dst,
+    vmult(LinearAlgebra::CUDAWrappers::Vector<Number>       &dst,
           const LinearAlgebra::CUDAWrappers::Vector<Number> &src) const;
 
     /**
      * Apply the transposed preconditioner. Not yet implemented.
      */
     void
-    Tvmult(LinearAlgebra::CUDAWrappers::Vector<Number> &      dst,
+    Tvmult(LinearAlgebra::CUDAWrappers::Vector<Number>       &dst,
            const LinearAlgebra::CUDAWrappers::Vector<Number> &src) const;
 
     /**
@@ -399,17 +421,23 @@ namespace CUDAWrappers
      */
     csrilu02Info_t info_M;
 
-    /**
-     * Solve and analysis structure for the lower triangular matrix $L$.
-     */
-    // csrsv2Info_t info_L;
+/**
+ * Solve and analysis structure for the lower triangular matrix $L$.
+ */
+#  ifdef USE_NEW_API
     cusparseSpSVDescr_t info_L;
+#  else
+    csrsv2Info_t info_L;
+#  endif
 
-    /**
-     * Solve and analysis structure for the upper triangular matrix $U$.
-     */
-    // csrsv2Info_t info_U;
+/**
+ * Solve and analysis structure for the upper triangular matrix $U$.
+ */
+#  ifdef USE_NEW_API
     cusparseSpSVDescr_t info_U;
+#  else
+    csrsv2Info_t info_U;
+#  endif
 
     /**
      * Pointer to the matrix this object was initialized with.
@@ -445,6 +473,17 @@ namespace CUDAWrappers
      * computing the decomposition.
      */
     std::unique_ptr<void, void (*)(void *)> buffer_dev;
+
+#  ifdef USE_NEW_API
+    /**
+     * NOTE: General API cusparseSpSV calls demands that the external buffer
+     * must not be modified between cusparseSpSV_analysis() and
+     * cusparseSpSV_solve(), therefore we need to store independent buffers
+     * intead of sharing one common buffer like before.
+     */
+    std::unique_ptr<void, void (*)(void *)> buffer_dev_L;
+    std::unique_ptr<void, void (*)(void *)> buffer_dev_U;
+#  endif
 
     /**
      * Determine if level information should be generated for the lower
