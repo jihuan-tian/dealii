@@ -884,7 +884,9 @@ namespace
     std::unique_ptr<float, void (*)(float *)> tmp_y(
       nullptr, Utilities::CUDA::delete_device_data<float>);
 
-#  if CUSPARSE_VER_MAJOR <= 11
+#  if CUDA_VERSION < 12030
+    // XXX cusparseCreateDnVec and cusparseSpSV_analysis doesn't work with nullptr
+    // before CUDA 12.3, so we need to allocate memory for the vectors.
     tmp_x.reset(Utilities::CUDA::allocate_device_data<float>(m));
     tmp_y.reset(Utilities::CUDA::allocate_device_data<float>(m));
 #  endif
@@ -979,7 +981,9 @@ namespace
     std::unique_ptr<double, void (*)(double *)> tmp_y(
       nullptr, Utilities::CUDA::delete_device_data<double>);
 
-#  if CUSPARSE_VER_MAJOR <= 11
+#  if CUDA_VERSION < 12030
+    // XXX cusparseCreateDnVec and cusparseSpSV_analysis doesn't work with nullptr
+    // before CUDA 12.3, so we need to allocate memory for the vectors.
     tmp_x.reset(Utilities::CUDA::allocate_device_data<double>(m));
     tmp_y.reset(Utilities::CUDA::allocate_device_data<double>(m));
 #  endif
@@ -1283,7 +1287,9 @@ namespace
     std::unique_ptr<float, void (*)(float *)> tmp_y(
       nullptr, Utilities::CUDA::delete_device_data<float>);
 
-#  if CUSPARSE_VER_MAJOR <= 11
+#  if CUDA_VERSION < 12030
+    // XXX cusparseCreateDnVec and cusparseSpSV_analysis doesn't work with nullptr
+    // before CUDA 12.3, so we need to allocate memory for the vectors.
     tmp_x.reset(Utilities::CUDA::allocate_device_data<float>(m));
     tmp_y.reset(Utilities::CUDA::allocate_device_data<float>(m));
 #  endif
@@ -1375,7 +1381,9 @@ namespace
     std::unique_ptr<double, void (*)(double *)> tmp_y(
       nullptr, Utilities::CUDA::delete_device_data<double>);
 
-#  if CUSPARSE_VER_MAJOR <= 11
+#  if CUDA_VERSION < 12030
+    // XXX cusparseCreateDnVec and cusparseSpSV_analysis doesn't work with nullptr
+    // before CUDA 12.3, so we need to allocate memory for the vectors.
     tmp_x.reset(Utilities::CUDA::allocate_device_data<double>(m));
     tmp_y.reset(Utilities::CUDA::allocate_device_data<double>(m));
 #  endif
