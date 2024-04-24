@@ -885,8 +885,8 @@ namespace
       nullptr, Utilities::CUDA::delete_device_data<float>);
 
 #  if CUDA_VERSION < 12030
-    // XXX cusparseCreateDnVec and cusparseSpSV_analysis doesn't work with nullptr
-    // before CUDA 12.3, so we need to allocate memory for the vectors.
+    // XXX cusparseCreateDnVec and cusparseSpSV_analysis doesn't work with
+    // nullptr before CUDA 12.3, so we need to allocate memory for the vectors.
     tmp_x.reset(Utilities::CUDA::allocate_device_data<float>(m));
     tmp_y.reset(Utilities::CUDA::allocate_device_data<float>(m));
 #  endif
@@ -982,8 +982,8 @@ namespace
       nullptr, Utilities::CUDA::delete_device_data<double>);
 
 #  if CUDA_VERSION < 12030
-    // XXX cusparseCreateDnVec and cusparseSpSV_analysis doesn't work with nullptr
-    // before CUDA 12.3, so we need to allocate memory for the vectors.
+    // XXX cusparseCreateDnVec and cusparseSpSV_analysis doesn't work with
+    // nullptr before CUDA 12.3, so we need to allocate memory for the vectors.
     tmp_x.reset(Utilities::CUDA::allocate_device_data<double>(m));
     tmp_y.reset(Utilities::CUDA::allocate_device_data<double>(m));
 #  endif
@@ -1288,8 +1288,8 @@ namespace
       nullptr, Utilities::CUDA::delete_device_data<float>);
 
 #  if CUDA_VERSION < 12030
-    // XXX cusparseCreateDnVec and cusparseSpSV_analysis doesn't work with nullptr
-    // before CUDA 12.3, so we need to allocate memory for the vectors.
+    // XXX cusparseCreateDnVec and cusparseSpSV_analysis doesn't work with
+    // nullptr before CUDA 12.3, so we need to allocate memory for the vectors.
     tmp_x.reset(Utilities::CUDA::allocate_device_data<float>(m));
     tmp_y.reset(Utilities::CUDA::allocate_device_data<float>(m));
 #  endif
@@ -1382,8 +1382,8 @@ namespace
       nullptr, Utilities::CUDA::delete_device_data<double>);
 
 #  if CUDA_VERSION < 12030
-    // XXX cusparseCreateDnVec and cusparseSpSV_analysis doesn't work with nullptr
-    // before CUDA 12.3, so we need to allocate memory for the vectors.
+    // XXX cusparseCreateDnVec and cusparseSpSV_analysis doesn't work with
+    // nullptr before CUDA 12.3, so we need to allocate memory for the vectors.
     tmp_x.reset(Utilities::CUDA::allocate_device_data<double>(m));
     tmp_y.reset(Utilities::CUDA::allocate_device_data<double>(m));
 #  endif
@@ -1793,10 +1793,12 @@ namespace CUDAWrappers
 #endif
 
     // step 4: perform analysis of incomplete Cholesky on M
-    //         perform analysis of triangular solve on L
-    //         perform analysis of triangular solve on L'
-    // The lower triangular part of M has the same sparsity pattern as L, so
-    // we can do analysis of csric02 and csrsv2 simultaneously.
+    // Even though the lower triangular part of M has the same sparsity pattern
+    // as L, we cannot do analysis of csric02 and csrsv2 simultaneously, because
+    // the underlying cusparseSpSV_* API requires that the matrix data is
+    // consistent between the analysis and solve phases. So the analysis of L
+    // and L' must be deferred until the incomplete Cholesky factorization of M
+    // is done.
 
     status = cusparseXcsric02_analysis(cusparse_handle,
                                        n_rows,
@@ -1815,24 +1817,27 @@ namespace CUDAWrappers
       cusparseXcsric02_zeroPivot(cusparse_handle, info_M, &structural_zero);
     AssertCusparse(status);
 
-    status = cusparseXcsrsv2_analysis(cusparse_handle,
-                                      CUSPARSE_OPERATION_TRANSPOSE,
-                                      n_rows,
-                                      n_nonzero_elements,
-                                      descr_L,
-                                      P_val_dev.get(),
-                                      P_row_ptr_dev,
-                                      P_column_index_dev,
-                                      info_Lt,
-                                      policy_Lt,
-#ifdef USE_NEW_API
-                                      buffer_dev_Lt.get()
-#else
-                                      buffer_dev.get()
-#endif
-    );
+    // step 5: M = L * L'
+    status = cusparseXcsric02(cusparse_handle,
+                              n_rows,
+                              n_nonzero_elements,
+                              descr_M,
+                              P_val_dev.get(),
+                              P_row_ptr_dev,
+                              P_column_index_dev,
+                              info_M,
+                              policy_M,
+                              buffer_dev.get());
     AssertCusparse(status);
 
+    int numerical_zero;
+    status =
+      cusparseXcsric02_zeroPivot(cusparse_handle, info_M, &numerical_zero);
+    AssertCusparse(status);
+
+    // step 6: perform analysis of L and L'
+    //         perform analysis of triangular solve on L
+    //         perform analysis of triangular solve on L'
     status = cusparseXcsrsv2_analysis(cusparse_handle,
                                       CUSPARSE_OPERATION_NON_TRANSPOSE,
                                       n_rows,
@@ -1851,22 +1856,22 @@ namespace CUDAWrappers
     );
     AssertCusparse(status);
 
-    // step 5: M = L * L'
-    status = cusparseXcsric02(cusparse_handle,
-                              n_rows,
-                              n_nonzero_elements,
-                              descr_M,
-                              P_val_dev.get(),
-                              P_row_ptr_dev,
-                              P_column_index_dev,
-                              info_M,
-                              policy_M,
-                              buffer_dev.get());
-    AssertCusparse(status);
-
-    int numerical_zero;
-    status =
-      cusparseXcsric02_zeroPivot(cusparse_handle, info_M, &numerical_zero);
+    status = cusparseXcsrsv2_analysis(cusparse_handle,
+                                      CUSPARSE_OPERATION_TRANSPOSE,
+                                      n_rows,
+                                      n_nonzero_elements,
+                                      descr_L,
+                                      P_val_dev.get(),
+                                      P_row_ptr_dev,
+                                      P_column_index_dev,
+                                      info_Lt,
+                                      policy_Lt,
+#ifdef USE_NEW_API
+                                      buffer_dev_Lt.get()
+#else
+                                      buffer_dev.get()
+#endif
+    );
     AssertCusparse(status);
   }
 
@@ -1887,7 +1892,8 @@ namespace CUDAWrappers
 
     const Number *const src_dev = src.get_values();
     Number *const       dst_dev = dst.get_values();
-    // step 6: solve L*z = alpha*x
+
+    // step 7: solve L*z = alpha*x
     const Number     alpha = internal::NumberType<Number>::value(1.);
     cusparseStatus_t status =
       cusparseXcsrsv2_solve(cusparse_handle,
@@ -1911,7 +1917,7 @@ namespace CUDAWrappers
       );
     AssertCusparse(status);
 
-    // step 7: solve L'*y = alpha*z
+    // step 8: solve L'*y = alpha*z
     status = cusparseXcsrsv2_solve(cusparse_handle,
                                    CUSPARSE_OPERATION_TRANSPOSE,
                                    n_rows,
@@ -2106,7 +2112,7 @@ namespace CUDAWrappers
 
     // step 3: query how much memory used in csrilu02 and csrsv2, and allocate
     // the buffer
-    int              BufferSize_M;
+    int              bufferSize_M;
     cusparseStatus_t status = cusparseXcsrilu02_bufferSize(cusparse_handle,
                                                            n_rows,
                                                            n_nonzero_elements,
@@ -2115,10 +2121,10 @@ namespace CUDAWrappers
                                                            P_row_ptr_dev,
                                                            P_column_index_dev,
                                                            info_M,
-                                                           &BufferSize_M);
+                                                           &bufferSize_M);
     AssertCusparse(status);
 
-    int BufferSize_L;
+    int bufferSize_L;
     status = cusparseXcsrsv2_bufferSize(cusparse_handle,
                                         CUSPARSE_OPERATION_NON_TRANSPOSE,
                                         n_rows,
@@ -2128,7 +2134,7 @@ namespace CUDAWrappers
                                         P_row_ptr_dev,
                                         P_column_index_dev,
                                         info_L,
-                                        &BufferSize_L);
+                                        &bufferSize_L);
     AssertCusparse(status);
 
     int BufferSize_U;
@@ -2145,7 +2151,7 @@ namespace CUDAWrappers
     AssertCusparse(status);
 
     const int BufferSize =
-      std::max(BufferSize_M, std::max(BufferSize_L, BufferSize_U));
+      std::max(bufferSize_M, std::max(bufferSize_L, BufferSize_U));
     // workaround: since allocate_device_data needs a type, we pass char
     // which is required to have size 1.
     buffer_dev.reset(static_cast<void *>(
@@ -2154,17 +2160,19 @@ namespace CUDAWrappers
 #ifdef USE_NEW_API
     buffer_dev_L.reset(
       static_cast<void *>(Utilities::CUDA::allocate_device_data<char>(
-        BufferSize_L / sizeof(char))));
+        bufferSize_L / sizeof(char))));
     buffer_dev_U.reset(
       static_cast<void *>(Utilities::CUDA::allocate_device_data<char>(
         BufferSize_U / sizeof(char))));
 #endif
 
-    // step 4: perform analysis of incomplete Cholesky on M
-    //         perform analysis of triangular solve on L
-    //         perform analysis of triangular solve on U
-    // The lower(upper) triangular part of M has the same sparsity pattern as
-    // L(U), we can do analysis of csrilu0 and csrsv2 simultaneously.
+    // step 4: perform analysis of incomplete LU on M
+    // Even though the lower(upper) triangular part of M has the same sparsity
+    // pattern as L(U), we cannot do analysis of csrilu0 and csrsv2
+    // simultaneously because the underlying cusparseSpSV_* API requires that
+    // the matrix data is consistent between the analysis and solve phases. So
+    // the analysis of L and U must be deferred until the incomplete LU
+    // factorization of M is done.
 
     status = cusparseXcsrilu02_analysis(cusparse_handle,
                                         n_rows,
@@ -2183,6 +2191,27 @@ namespace CUDAWrappers
       cusparseXcsrilu02_zeroPivot(cusparse_handle, info_M, &structural_zero);
     AssertCusparse(status);
 
+    // step 5: M = L * U
+    status = cusparseXcsrilu02(cusparse_handle,
+                               n_rows,
+                               n_nonzero_elements,
+                               descr_M,
+                               P_val_dev.get(),
+                               P_row_ptr_dev,
+                               P_column_index_dev,
+                               info_M,
+                               policy_M,
+                               buffer_dev.get());
+    AssertCusparse(status);
+
+    int numerical_zero;
+    status =
+      cusparseXcsrilu02_zeroPivot(cusparse_handle, info_M, &numerical_zero);
+    AssertCusparse(status);
+
+    // step 6: perform analysis of L and U
+    //         perform analysis of triangular solve on L
+    //         perform analysis of triangular solve on U
     status = cusparseXcsrsv2_analysis(cusparse_handle,
                                       CUSPARSE_OPERATION_NON_TRANSPOSE,
                                       n_rows,
@@ -2217,23 +2246,6 @@ namespace CUDAWrappers
                                       buffer_dev.get()
 #endif
     );
-
-    // step 5: M = L * U
-    status = cusparseXcsrilu02(cusparse_handle,
-                               n_rows,
-                               n_nonzero_elements,
-                               descr_M,
-                               P_val_dev.get(),
-                               P_row_ptr_dev,
-                               P_column_index_dev,
-                               info_M,
-                               policy_M,
-                               buffer_dev.get());
-    AssertCusparse(status);
-
-    int numerical_zero;
-    status =
-      cusparseXcsrilu02_zeroPivot(cusparse_handle, info_M, &numerical_zero);
     AssertCusparse(status);
   }
 
@@ -2255,7 +2267,7 @@ namespace CUDAWrappers
     const Number *const src_dev = src.get_values();
     Number *const       dst_dev = dst.get_values();
 
-    // step 6: solve L*z = alpha*x
+    // step 7: solve L*z = alpha*x
     const Number     alpha = internal::NumberType<Number>::value(1.);
     cusparseStatus_t status =
       cusparseXcsrsv2_solve(cusparse_handle,
@@ -2279,7 +2291,7 @@ namespace CUDAWrappers
       );
     AssertCusparse(status);
 
-    // step 7: solve U*y = alpha*z
+    // step 8: solve U*y = alpha*z
     status = cusparseXcsrsv2_solve(cusparse_handle,
                                    CUSPARSE_OPERATION_NON_TRANSPOSE,
                                    n_rows,
