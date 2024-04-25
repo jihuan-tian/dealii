@@ -158,12 +158,12 @@ namespace CUDAWrappers
                                 buffer);
       AssertCusparse(error_code);
 
-      cuda_error_code = cudaFree(buffer);
-      AssertCuda(cuda_error_code);
       error_code = cusparseDestroyDnVec(x_cuvec);
       AssertCusparse(error_code);
       error_code = cusparseDestroyDnVec(y_cuvec);
       AssertCusparse(error_code);
+      cuda_error_code = cudaFree(buffer);
+      AssertCuda(cuda_error_code);
     }
 
 
@@ -231,12 +231,12 @@ namespace CUDAWrappers
                                 buffer);
       AssertCusparse(error_code);
 
-      cuda_error_code = cudaFree(buffer);
-      AssertCuda(cuda_error_code);
       error_code = cusparseDestroyDnVec(x_cuvec);
       AssertCusparse(error_code);
       error_code = cusparseDestroyDnVec(y_cuvec);
       AssertCusparse(error_code);
+      cuda_error_code = cudaFree(buffer);
+      AssertCuda(cuda_error_code);
     }
 
 
@@ -513,6 +513,39 @@ namespace CUDAWrappers
     LinearAlgebra::CUDAWrappers::Vector<Number>       &dst,
     const LinearAlgebra::CUDAWrappers::Vector<Number> &src) const
   {
+// XXX added by wxz
+#  if 1
+    // TODO: Create temporary sparse matrix descriptor is a workaround for the
+    // incorrect result problem of cusparseSpMV.
+    // The root cause for the problem is still unknown :(
+    cusparseSpMatDescr_t tmp_sp_descr;
+    cusparseStatus_t     error =
+      cusparseCreateCsr(&tmp_sp_descr,
+                        n_rows,
+                        n_cols,
+                        nnz,
+                        row_ptr_dev.get(),
+                        column_index_dev.get(),
+                        val_dev.get(),
+                        CUSPARSE_INDEX_32I,
+                        CUSPARSE_INDEX_32I,
+                        CUSPARSE_INDEX_BASE_ZERO,
+                        (std::is_same_v<Number, float> ? CUDA_R_32F :
+                                                         CUDA_R_64F));
+    AssertCusparse(error);
+
+    internal::csrmv(cusparse_handle,
+                    false,
+                    n_rows,
+                    n_cols,
+                    tmp_sp_descr,
+                    src.get_values(),
+                    false,
+                    dst.get_values());
+
+    error = cusparseDestroySpMat(tmp_sp_descr);
+    AssertCusparse(error);
+#  else
     internal::csrmv(cusparse_handle,
                     false,
                     n_rows,
@@ -521,6 +554,7 @@ namespace CUDAWrappers
                     src.get_values(),
                     false,
                     dst.get_values());
+#  endif
   }
 
 
