@@ -292,8 +292,7 @@ namespace LinearAlgebra
         <<<dim3(n_blocks, 1), dim3(block_size)>>>(result_device,
                                                   val.get(),
                                                   down_V.val.get(),
-                                                  static_cast<unsigned int>(
-                                                    n_elements));
+                                                  n_elements);
 
       // Copy the result back to the host
       Number result;
