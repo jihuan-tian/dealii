@@ -530,8 +530,8 @@ namespace CUDAWrappers
                         CUSPARSE_INDEX_32I,
                         CUSPARSE_INDEX_32I,
                         CUSPARSE_INDEX_BASE_ZERO,
-                        (std::is_same_v<Number, float> ? CUDA_R_32F :
-                                                         CUDA_R_64F));
+                        (std::is_same<Number, float>::value ? CUDA_R_32F :
+                                                              CUDA_R_64F));
     AssertCusparse(error);
 
     internal::csrmv(cusparse_handle,
