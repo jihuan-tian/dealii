@@ -741,7 +741,7 @@ namespace internal
       Assert(source_end == source_begin || destination != nullptr,
              ExcInternalError());
       const std::size_t size = source_end - source_begin;
-      if (size < minimum_parallel_grain_size)
+      if (true) // Original code: if (size < minimum_parallel_grain_size)
         AlignedVectorCopyConstruct::apply_to_subrange(0, size);
       else
         apply_parallel(0, size, minimum_parallel_grain_size);
@@ -810,7 +810,7 @@ namespace internal
       Assert(source_end == source_begin || destination != nullptr,
              ExcInternalError());
       const std::size_t size = source_end - source_begin;
-      if (size < minimum_parallel_grain_size)
+      if (true) // Original code: if (size < minimum_parallel_grain_size)
         AlignedVectorMoveConstruct::apply_to_subrange(0, size);
       else
         apply_parallel(0, size, minimum_parallel_grain_size);
@@ -901,7 +901,7 @@ namespace internal
                           sizeof(T)) == 0)
             trivial_element = true;
         }
-      if (size < minimum_parallel_grain_size)
+      if (true) // Original code: if (size < minimum_parallel_grain_size)
         AlignedVectorInitialize::apply_to_subrange(0, size);
       else
         apply_parallel(0, size, minimum_parallel_grain_size);
@@ -986,7 +986,7 @@ namespace internal
         return;
       Assert(destination != nullptr, ExcInternalError());
 
-      if (size < minimum_parallel_grain_size)
+      if (true) // Original code: if (size < minimum_parallel_grain_size)
         AlignedVectorDefaultInitialize::apply_to_subrange(0, size);
       else
         apply_parallel(0, size, minimum_parallel_grain_size);
