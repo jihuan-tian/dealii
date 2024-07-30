@@ -11775,6 +11775,59 @@ Triangulation<dim, spacedim>::create_triangulation(
 }
 
 
+template <int dim, int spacedim>
+void
+Triangulation<dim, spacedim>::create_triangulation_without_orientation_checking(
+  const std::vector<Point<spacedim>> &v,
+  const std::vector<CellData<dim>> &  cells,
+  const SubCellData &                 subcelldata)
+{
+  Assert((vertices.size() == 0) && (levels.size() == 0) && (faces == nullptr),
+         ExcTriangulationNotEmpty(vertices.size(), levels.size()));
+  // check that no forbidden arrays
+  // are used
+  Assert(subcelldata.check_consistency(dim), ExcInternalError());
+
+  // try to create a triangulation; if this fails, we still want to
+  // throw an exception but if we just do so we'll get into trouble
+  // because sometimes other objects are already attached to it:
+  try
+    {
+      internal::TriangulationImplementation::Implementation::
+        create_triangulation(v, cells, subcelldata, *this);
+    }
+  catch (...)
+    {
+      clear_despite_subscriptions();
+      throw;
+    }
+
+  reset_policy();
+
+  // update our counts of the various elements of a triangulation, and set
+  // active_cell_indices of all cells
+  reset_cell_vertex_indices_cache();
+  internal::TriangulationImplementation::Implementation::compute_number_cache(
+    *this, levels.size(), number_cache);
+  reset_active_cell_indices();
+  reset_global_cell_indices();
+
+  // now verify that there are indeed no distorted cells. as per the
+  // documentation of this class, we first collect all distorted cells
+  // and then throw an exception if there are any
+  if (check_for_distorted_cells)
+    {
+      DistortedCellList distorted_cells = collect_distorted_coarse_cells(*this);
+      // throw the array (and fill the various location fields) if
+      // there are distorted cells. otherwise, just fall off the end
+      // of the function
+      AssertThrow(distorted_cells.distorted_cells.size() == 0, distorted_cells);
+    }
+
+  // inform all listeners that the triangulation has been created
+  signals.create();
+}
+
 
 template <int dim, int spacedim>
 void

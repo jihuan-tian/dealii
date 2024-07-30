@@ -1844,6 +1844,11 @@ public:
                        const std::vector<CellData<dim>> &  cells,
                        const SubCellData &                 subcelldata);
 
+  void
+  create_triangulation_without_orientation_checking(const std::vector<Point<spacedim>> &vertices,
+                       const std::vector<CellData<dim>> &  cells,
+                       const SubCellData &                 subcelldata);
+
   /**
    * Create a triangulation from the provided
    * TriangulationDescription::Description.
