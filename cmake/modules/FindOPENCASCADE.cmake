@@ -67,11 +67,25 @@ IF(EXISTS ${OPENCASCADE_INCLUDE_DIR}/Standard_Version.hxx)
 ENDIF()
 
 # These seem to be pretty much the only required ones.
-SET(_opencascade_libraries
-  TKBO TKBool TKBRep TKernel TKFeat TKFillet TKG2d TKG3d TKGeomAlgo
-  TKGeomBase TKHLR TKIGES TKMath TKMesh TKOffset TKPrim TKShHealing TKSTEP
-  TKSTEPAttr TKSTEPBase TKSTEP209 TKSTL TKTopAlgo TKXSBase
-  )
+# XXX modified by wxz
+IF(OPENCASCADE_VERSION VERSION_GREATER_EQUAL "7.8")
+  # for OpenCASCADE >=7.8.x
+  MESSAGE("Using OpenCASCADE 7.8.x or newer libraries")
+  SET(_opencascade_libraries
+    TKBO TKBool TKBRep TKernel TKFeat TKFillet TKG2d TKG3d TKGeomAlgo
+    TKGeomBase TKHLR TKMath TKMesh TKOffset TKPrim TKShHealing TKDE TKDEIGES
+    TKDESTEP TKDESTL TKTopAlgo TKXSBase
+    )
+ELSE()
+  # for OpenCASCADE <7.8.x
+  MESSAGE("Using OpenCASCADE 7.7.x or older libraries")
+  SET(_opencascade_libraries
+    TKBO TKBool TKBRep TKernel TKFeat TKFillet TKG2d TKG3d TKGeomAlgo
+    TKGeomBase TKHLR TKIGES TKMath TKMesh TKOffset TKPrim TKShHealing TKSTEP
+    TKSTEPAttr TKSTEPBase TKSTEP209 TKSTL TKTopAlgo TKXSBase
+    )
+ENDIF()
+# XXX ends here
 
 SET(_libraries "")
 FOREACH(_library ${_opencascade_libraries})
