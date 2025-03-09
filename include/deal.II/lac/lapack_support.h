@@ -118,7 +118,9 @@ namespace LAPACKSupport
     /// Matrix is diagonal
     diagonal = 6,
     /// Matrix is in upper Hessenberg form
-    hessenberg = 8
+    hessenberg = 8,
+    /// Matrix is Hermite symmetric
+    hermite_symmetric = 16
   };
 
   /**
@@ -141,6 +143,8 @@ namespace LAPACKSupport
           return "diagonal";
         case hessenberg:
           return "Hessenberg";
+        case hermite_symmetric:
+          return "Hermite symmetric";
       }
 
     Assert(false, ExcNotImplemented());
@@ -163,6 +167,10 @@ namespace LAPACKSupport
    * Character constant.
    */
   static const char T = 'T';
+  /**
+   * Character constant.
+   */
+  static const char C = 'C';
   /**
    * Character constant.
    */
