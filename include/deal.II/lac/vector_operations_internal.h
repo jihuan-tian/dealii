@@ -74,7 +74,7 @@ namespace internal
     void
     copy(const std::complex<T> *begin,
          const std::complex<T> *end,
-         std::complex<U> *      dest)
+         std::complex<U>       *dest)
     {
       std::copy(begin, end, dest);
     }
@@ -102,7 +102,7 @@ namespace internal
     template <typename Functor>
     struct TBBForFunctor
     {
-      TBBForFunctor(Functor &       functor,
+      TBBForFunctor(Functor        &functor,
                     const size_type start,
                     const size_type end)
         : functor(functor)
@@ -137,7 +137,7 @@ namespace internal
         functor(r_begin, r_end);
       }
 
-      Functor &       functor;
+      Functor        &functor;
       const size_type start;
       const size_type end;
       unsigned int    n_chunks;
@@ -148,7 +148,7 @@ namespace internal
     template <typename Functor>
     void
     parallel_for(
-      Functor &       functor,
+      Functor        &functor,
       const size_type start,
       const size_type end,
       const std::shared_ptr<::dealii::parallel::internal::TBBPartitioner>
@@ -335,7 +335,7 @@ namespace internal
     template <typename Number>
     struct Vectorization_sadd_xav
     {
-      Vectorization_sadd_xav(Number *            val,
+      Vectorization_sadd_xav(Number             *val,
                              const Number *const v_val,
                              const Number        a,
                              const Number        x)
@@ -524,7 +524,7 @@ namespace internal
     template <typename Number>
     struct Vectorization_sadd_xavbw
     {
-      Vectorization_sadd_xavbw(Number *      val,
+      Vectorization_sadd_xavbw(Number       *val,
                                const Number *v_val,
                                const Number *w_val,
                                Number        x,
@@ -663,7 +663,7 @@ namespace internal
     template <typename Number>
     struct Vectorization_equ_aubvcw
     {
-      Vectorization_equ_aubvcw(Number *      val,
+      Vectorization_equ_aubvcw(Number       *val,
                                const Number *u_val,
                                const Number *v_val,
                                const Number *w_val,
@@ -858,7 +858,7 @@ namespace internal
         return std::pow(std::abs(x), p);
       }
 
-      const Number * X;
+      const Number  *X;
       const RealType p;
     };
 
@@ -985,12 +985,121 @@ namespace internal
      */
     const unsigned int vector_accumulation_recursion_threshold = 128;
 
+    // this is the inner working routine for the accumulation loops
+    // below. This is the standard case where the loop bounds are known. We
+    // pulled this function out of the regular accumulate routine because we
+    // might do this thing vectorized (see specialized function below)
+    template <typename Operation, typename ResultType>
+    void
+    accumulate_regular(
+      const Operation &op,
+      const size_type &n_chunks,
+      size_type       &index,
+      ResultType (&outer_results)[vector_accumulation_recursion_threshold],
+      std::integral_constant<bool, false>)
+    {
+      // note that each chunk is chosen to have a width of 32, thereby the index
+      // is incremented by 4*8 for each @p i.
+      for (size_type i = 0; i < n_chunks; ++i)
+        {
+          ResultType r0 = op(index);
+          ResultType r1 = op(index + 1);
+          ResultType r2 = op(index + 2);
+          ResultType r3 = op(index + 3);
+          index += 4;
+          for (size_type j = 1; j < 8; ++j, index += 4)
+            {
+              r0 += op(index);
+              r1 += op(index + 1);
+              r2 += op(index + 2);
+              r3 += op(index + 3);
+            }
+          r0 += r1;
+          r2 += r3;
+          outer_results[i] = r0 + r2;
+        }
+    }
+
+
+    // this is the inner working routine for the accumulation loops
+    // below. This is the specialized case where the loop bounds are known and
+    // where we can vectorize. In that case, we request the 'do_vectorized'
+    // routine of the operation instead of the regular one which does several
+    // operations at once.
+    template <typename Operation, typename Number>
+    void
+    accumulate_regular(
+      const Operation &op,
+      size_type       &n_chunks,
+      size_type       &index,
+      Number (&outer_results)[vector_accumulation_recursion_threshold],
+      std::integral_constant<bool, true>)
+    {
+      // we start from @p index and workout @p n_chunks each of size 32.
+      // in order employ SIMD and work on @p nvecs at a time, we split this
+      // loop yet again:
+      // First we work on (n_chunks/nvecs) chunks, where each chunk processes
+      // nvecs*(4*8) elements.
+
+      constexpr unsigned int nvecs          = VectorizedArray<Number>::size();
+      const size_type        regular_chunks = n_chunks / nvecs;
+      for (size_type i = 0; i < regular_chunks; ++i)
+        {
+          VectorizedArray<Number> r0 = op.do_vectorized(index);
+          VectorizedArray<Number> r1 = op.do_vectorized(index + nvecs);
+          VectorizedArray<Number> r2 = op.do_vectorized(index + 2 * nvecs);
+          VectorizedArray<Number> r3 = op.do_vectorized(index + 3 * nvecs);
+          index += nvecs * 4;
+          for (size_type j = 1; j < 8; ++j, index += nvecs * 4)
+            {
+              r0 += op.do_vectorized(index);
+              r1 += op.do_vectorized(index + nvecs);
+              r2 += op.do_vectorized(index + 2 * nvecs);
+              r3 += op.do_vectorized(index + 3 * nvecs);
+            }
+          r0 += r1;
+          r2 += r3;
+          r0 += r2;
+          r0.store(&outer_results[i * nvecs]);
+        }
+
+      // If we are treating a case where the vector length is not divisible by
+      // the vectorization length, need a cleanup loop
+      // The remaining chunks are processed one by one starting from
+      // regular_chunks * nvecs; We do as much as possible with 2 SIMD
+      // operations within each chunk. Here we assume that nvecs < 32/2 = 16 as
+      // well as 16%nvecs==0.
+      static_assert(
+        VectorizedArray<Number>::size() <= 16 &&
+          16 % VectorizedArray<Number>::size() == 0,
+        "VectorizedArray::size() must be a power of 2 and not more than 16");
+      Assert(16 % nvecs == 0, ExcInternalError());
+      if (n_chunks % nvecs != 0)
+        {
+          VectorizedArray<Number> r0  = VectorizedArray<Number>(),
+                                  r1  = VectorizedArray<Number>();
+          const size_type start_irreg = regular_chunks * nvecs;
+          for (size_type c = start_irreg; c < n_chunks; ++c)
+            for (size_type j = 0; j < 32; j += 2 * nvecs, index += 2 * nvecs)
+              {
+                r0 += op.do_vectorized(index);
+                r1 += op.do_vectorized(index + nvecs);
+              }
+          r0 += r1;
+          r0.store(&outer_results[start_irreg]);
+          // update n_chunks to denote unused element in outer_results[] from
+          // which we can keep writing.
+          n_chunks = start_irreg + VectorizedArray<Number>::size();
+        }
+    }
+
+
     template <typename Operation, typename ResultType>
     void
     accumulate_recursive(const Operation &op,
                          const size_type  first,
                          const size_type  last,
-                         ResultType &     result)
+                         ResultType      &result)
     {
       const size_type vec_size = last - first;
       if (vec_size <= vector_accumulation_recursion_threshold * 32)
@@ -1119,117 +1228,6 @@ namespace internal
     }
 
 
-    // this is the inner working routine for the accumulation loops
-    // below. This is the standard case where the loop bounds are known. We
-    // pulled this function out of the regular accumulate routine because we
-    // might do this thing vectorized (see specialized function below)
-    template <typename Operation, typename ResultType>
-    void
-    accumulate_regular(
-      const Operation &op,
-      const size_type &n_chunks,
-      size_type &      index,
-      ResultType (&outer_results)[vector_accumulation_recursion_threshold],
-      std::integral_constant<bool, false>)
-    {
-      // note that each chunk is chosen to have a width of 32, thereby the index
-      // is incremented by 4*8 for each @p i.
-      for (size_type i = 0; i < n_chunks; ++i)
-        {
-          ResultType r0 = op(index);
-          ResultType r1 = op(index + 1);
-          ResultType r2 = op(index + 2);
-          ResultType r3 = op(index + 3);
-          index += 4;
-          for (size_type j = 1; j < 8; ++j, index += 4)
-            {
-              r0 += op(index);
-              r1 += op(index + 1);
-              r2 += op(index + 2);
-              r3 += op(index + 3);
-            }
-          r0 += r1;
-          r2 += r3;
-          outer_results[i] = r0 + r2;
-        }
-    }
-
-
-
-    // this is the inner working routine for the accumulation loops
-    // below. This is the specialized case where the loop bounds are known and
-    // where we can vectorize. In that case, we request the 'do_vectorized'
-    // routine of the operation instead of the regular one which does several
-    // operations at once.
-    template <typename Operation, typename Number>
-    void
-    accumulate_regular(
-      const Operation &op,
-      size_type &      n_chunks,
-      size_type &      index,
-      Number (&outer_results)[vector_accumulation_recursion_threshold],
-      std::integral_constant<bool, true>)
-    {
-      // we start from @p index and workout @p n_chunks each of size 32.
-      // in order employ SIMD and work on @p nvecs at a time, we split this
-      // loop yet again:
-      // First we work on (n_chunks/nvecs) chunks, where each chunk processes
-      // nvecs*(4*8) elements.
-
-      constexpr unsigned int nvecs          = VectorizedArray<Number>::size();
-      const size_type        regular_chunks = n_chunks / nvecs;
-      for (size_type i = 0; i < regular_chunks; ++i)
-        {
-          VectorizedArray<Number> r0 = op.do_vectorized(index);
-          VectorizedArray<Number> r1 = op.do_vectorized(index + nvecs);
-          VectorizedArray<Number> r2 = op.do_vectorized(index + 2 * nvecs);
-          VectorizedArray<Number> r3 = op.do_vectorized(index + 3 * nvecs);
-          index += nvecs * 4;
-          for (size_type j = 1; j < 8; ++j, index += nvecs * 4)
-            {
-              r0 += op.do_vectorized(index);
-              r1 += op.do_vectorized(index + nvecs);
-              r2 += op.do_vectorized(index + 2 * nvecs);
-              r3 += op.do_vectorized(index + 3 * nvecs);
-            }
-          r0 += r1;
-          r2 += r3;
-          r0 += r2;
-          r0.store(&outer_results[i * nvecs]);
-        }
-
-      // If we are treating a case where the vector length is not divisible by
-      // the vectorization length, need a cleanup loop
-      // The remaining chunks are processed one by one starting from
-      // regular_chunks * nvecs; We do as much as possible with 2 SIMD
-      // operations within each chunk. Here we assume that nvecs < 32/2 = 16 as
-      // well as 16%nvecs==0.
-      static_assert(
-        VectorizedArray<Number>::size() <= 16 &&
-          16 % VectorizedArray<Number>::size() == 0,
-        "VectorizedArray::size() must be a power of 2 and not more than 16");
-      Assert(16 % nvecs == 0, ExcInternalError());
-      if (n_chunks % nvecs != 0)
-        {
-          VectorizedArray<Number> r0  = VectorizedArray<Number>(),
-                                  r1  = VectorizedArray<Number>();
-          const size_type start_irreg = regular_chunks * nvecs;
-          for (size_type c = start_irreg; c < n_chunks; ++c)
-            for (size_type j = 0; j < 32; j += 2 * nvecs, index += 2 * nvecs)
-              {
-                r0 += op.do_vectorized(index);
-                r1 += op.do_vectorized(index + nvecs);
-              }
-          r0 += r1;
-          r0.store(&outer_results[start_irreg]);
-          // update n_chunks to denote unused element in outer_results[] from
-          // which we can keep writing.
-          n_chunks = start_irreg + VectorizedArray<Number>::size();
-        }
-    }
-
-
-
 #ifdef DEAL_II_WITH_TBB
     /**
      * This struct takes the loop range from the tbb parallel for loop and
@@ -1355,7 +1353,7 @@ namespace internal
       const Operation &op,
       const size_type  start,
       const size_type  end,
-      ResultType &     result,
+      ResultType      &result,
       const std::shared_ptr<::dealii::parallel::internal::TBBPartitioner>
         &partitioner)
     {
@@ -1657,7 +1655,7 @@ namespace internal
     {
       static void
       copy(const std::shared_ptr<::dealii::parallel::internal::TBBPartitioner>
-             &             thread_loop_partitioner,
+                          &thread_loop_partitioner,
            const size_type size,
            const ::dealii::MemorySpace::
              MemorySpaceData<Number2, ::dealii::MemorySpace::Host> &v_data,
@@ -1672,7 +1670,7 @@ namespace internal
 
       static void
       set(const std::shared_ptr<::dealii::parallel::internal::TBBPartitioner>
-            &             thread_loop_partitioner,
+                         &thread_loop_partitioner,
           const size_type size,
           const Number    s,
           ::dealii::MemorySpace::MemorySpaceData<Number,
@@ -1686,7 +1684,7 @@ namespace internal
       static void
       add_vector(
         const std::shared_ptr<::dealii::parallel::internal::TBBPartitioner>
-          &             thread_loop_partitioner,
+                       &thread_loop_partitioner,
         const size_type size,
         const ::dealii::MemorySpace::
           MemorySpaceData<Number, ::dealii::MemorySpace::Host> &v_data,
@@ -1702,7 +1700,7 @@ namespace internal
       static void
       subtract_vector(
         const std::shared_ptr<::dealii::parallel::internal::TBBPartitioner>
-          &             thread_loop_partitioner,
+                       &thread_loop_partitioner,
         const size_type size,
         const ::dealii::MemorySpace::
           MemorySpaceData<Number, ::dealii::MemorySpace::Host> &v_data,
@@ -1718,7 +1716,7 @@ namespace internal
       static void
       add_factor(
         const std::shared_ptr<::dealii::parallel::internal::TBBPartitioner>
-          &             thread_loop_partitioner,
+                       &thread_loop_partitioner,
         const size_type size,
         Number          a,
         ::dealii::MemorySpace::MemorySpaceData<Number,
@@ -1731,7 +1729,7 @@ namespace internal
 
       static void
       add_av(const std::shared_ptr<::dealii::parallel::internal::TBBPartitioner>
-               &             thread_loop_partitioner,
+                            &thread_loop_partitioner,
              const size_type size,
              const Number    a,
              const ::dealii::MemorySpace::
@@ -1749,7 +1747,7 @@ namespace internal
       static void
       add_avpbw(
         const std::shared_ptr<::dealii::parallel::internal::TBBPartitioner>
-          &             thread_loop_partitioner,
+                       &thread_loop_partitioner,
         const size_type size,
         const Number    a,
         const Number    b,
@@ -1769,7 +1767,7 @@ namespace internal
       static void
       sadd_xv(
         const std::shared_ptr<::dealii::parallel::internal::TBBPartitioner>
-          &             thread_loop_partitioner,
+                       &thread_loop_partitioner,
         const size_type size,
         const Number    x,
         const ::dealii::MemorySpace::
@@ -1787,7 +1785,7 @@ namespace internal
       static void
       sadd_xav(
         const std::shared_ptr<::dealii::parallel::internal::TBBPartitioner>
-          &             thread_loop_partitioner,
+                       &thread_loop_partitioner,
         const size_type size,
         const Number    x,
         const Number    a,
@@ -1807,7 +1805,7 @@ namespace internal
       static void
       sadd_xavbw(
         const std::shared_ptr<::dealii::parallel::internal::TBBPartitioner>
-          &             thread_loop_partitioner,
+                       &thread_loop_partitioner,
         const size_type size,
         const Number    x,
         const Number    a,
@@ -1828,7 +1826,7 @@ namespace internal
       static void
       multiply_factor(
         const std::shared_ptr<::dealii::parallel::internal::TBBPartitioner>
-          &             thread_loop_partitioner,
+                       &thread_loop_partitioner,
         const size_type size,
         const Number    factor,
         ::dealii::MemorySpace::MemorySpaceData<Number,
@@ -1842,7 +1840,7 @@ namespace internal
 
       static void
       scale(const std::shared_ptr<::dealii::parallel::internal::TBBPartitioner>
-              &             thread_loop_partitioner,
+                           &thread_loop_partitioner,
             const size_type size,
             const ::dealii::MemorySpace::
               MemorySpaceData<Number, ::dealii::MemorySpace::Host> &v_data,
@@ -1857,7 +1855,7 @@ namespace internal
 
       static void
       equ_au(const std::shared_ptr<::dealii::parallel::internal::TBBPartitioner>
-               &             thread_loop_partitioner,
+                            &thread_loop_partitioner,
              const size_type size,
              const Number    a,
              const ::dealii::MemorySpace::
@@ -1875,7 +1873,7 @@ namespace internal
       static void
       equ_aubv(
         const std::shared_ptr<::dealii::parallel::internal::TBBPartitioner>
-          &             thread_loop_partitioner,
+                       &thread_loop_partitioner,
         const size_type size,
         const Number    a,
         const Number    b,
@@ -1894,7 +1892,7 @@ namespace internal
 
       static Number
       dot(const std::shared_ptr<::dealii::parallel::internal::TBBPartitioner>
-            &             thread_loop_partitioner,
+                         &thread_loop_partitioner,
           const size_type size,
           const ::dealii::MemorySpace::
             MemorySpaceData<Number2, ::dealii::MemorySpace::Host> &v_data,
@@ -1915,9 +1913,9 @@ namespace internal
       template <typename real_type>
       static void
       norm_2(const std::shared_ptr<::dealii::parallel::internal::TBBPartitioner>
-               &             thread_loop_partitioner,
+                            &thread_loop_partitioner,
              const size_type size,
-             real_type &     sum,
+             real_type      &sum,
              ::dealii::MemorySpace::MemorySpaceData<Number,
                                                     ::dealii::MemorySpace::Host>
                &data)
@@ -1929,7 +1927,7 @@ namespace internal
       static Number
       mean_value(
         const std::shared_ptr<::dealii::parallel::internal::TBBPartitioner>
-          &             thread_loop_partitioner,
+                       &thread_loop_partitioner,
         const size_type size,
         const ::dealii::MemorySpace::
           MemorySpaceData<Number, ::dealii::MemorySpace::Host> &data)
@@ -1944,9 +1942,9 @@ namespace internal
       template <typename real_type>
       static void
       norm_1(const std::shared_ptr<::dealii::parallel::internal::TBBPartitioner>
-               &             thread_loop_partitioner,
+                            &thread_loop_partitioner,
              const size_type size,
-             real_type &     sum,
+             real_type      &sum,
              ::dealii::MemorySpace::MemorySpaceData<Number,
                                                     ::dealii::MemorySpace::Host>
                &data)
@@ -1958,9 +1956,9 @@ namespace internal
       template <typename real_type>
       static void
       norm_p(const std::shared_ptr<::dealii::parallel::internal::TBBPartitioner>
-               &             thread_loop_partitioner,
+                            &thread_loop_partitioner,
              const size_type size,
-             real_type &     sum,
+             real_type      &sum,
              const real_type p,
              ::dealii::MemorySpace::MemorySpaceData<Number,
                                                     ::dealii::MemorySpace::Host>
@@ -1973,7 +1971,7 @@ namespace internal
       static Number
       add_and_dot(
         const std::shared_ptr<::dealii::parallel::internal::TBBPartitioner>
-          &             thread_loop_partitioner,
+                       &thread_loop_partitioner,
         const size_type size,
         const Number    a,
         const ::dealii::MemorySpace::
@@ -1998,7 +1996,7 @@ namespace internal
       static void
       import_elements(
         const std::shared_ptr<::dealii::parallel::internal::TBBPartitioner>
-          &                     thread_loop_partitioner,
+                               &thread_loop_partitioner,
         const size_type         size,
         VectorOperation::values operation,
         const ::dealii::MemorySpace::MemorySpaceData<Number, MemorySpace2>
@@ -2348,7 +2346,7 @@ namespace internal
                                                  ::dealii::MemorySpace::CUDA>
             &data)
       {
-        Number *    result_device;
+        Number     *result_device;
         cudaError_t error_code = cudaMalloc(&result_device, sizeof(Number));
         AssertCuda(error_code);
         error_code = cudaMemset(result_device, 0, sizeof(Number));
@@ -2384,9 +2382,9 @@ namespace internal
       template <typename real_type>
       static void
       norm_2(const std::shared_ptr<::dealii::parallel::internal::TBBPartitioner>
-               &             thread_loop_partitioner,
+                            &thread_loop_partitioner,
              const size_type size,
-             real_type &     sum,
+             real_type      &sum,
              ::dealii::MemorySpace::MemorySpaceData<Number,
                                                     ::dealii::MemorySpace::CUDA>
                &data)
@@ -2401,7 +2399,7 @@ namespace internal
         const ::dealii::MemorySpace::
           MemorySpaceData<Number, ::dealii::MemorySpace::CUDA> &data)
       {
-        Number *    result_device;
+        Number     *result_device;
         cudaError_t error_code = cudaMalloc(&result_device, sizeof(Number));
         AssertCuda(error_code);
         error_code = cudaMemset(result_device, 0, sizeof(Number));
@@ -2433,12 +2431,12 @@ namespace internal
       norm_1(
         const std::shared_ptr<::dealii::parallel::internal::TBBPartitioner> &,
         const size_type size,
-        real_type &     sum,
+        real_type      &sum,
         ::dealii::MemorySpace::MemorySpaceData<Number,
                                                ::dealii::MemorySpace::CUDA>
           &data)
       {
-        Number *    result_device;
+        Number     *result_device;
         cudaError_t error_code = cudaMalloc(&result_device, sizeof(Number));
         AssertCuda(error_code);
         error_code = cudaMemset(result_device, 0, sizeof(Number));
@@ -2488,7 +2486,7 @@ namespace internal
                                                ::dealii::MemorySpace::CUDA>
           &data)
       {
-        Number *    res_d;
+        Number     *res_d;
         cudaError_t error_code = cudaMalloc(&res_d, sizeof(Number));
         AssertCuda(error_code);
         error_code = cudaMemset(res_d, 0, sizeof(Number));
@@ -2516,7 +2514,7 @@ namespace internal
       static void
       import_elements(
         const std::shared_ptr<::dealii::parallel::internal::TBBPartitioner>
-          &                     thread_loop_partitioner,
+                               &thread_loop_partitioner,
         const size_type         size,
         VectorOperation::values operation,
         const ::dealii::MemorySpace::MemorySpaceData<Number, MemorySpace2>
