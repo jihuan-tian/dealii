@@ -2160,6 +2160,8 @@ template class QSimpson<3>;
 template class QMilne<3>;
 template class QWeddle<3>;
 
+template class QGauss<4>;
+
 template class QSorted<1>;
 template class QSorted<2>;
 template class QSorted<3>;

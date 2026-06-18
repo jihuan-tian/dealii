@@ -50,7 +50,7 @@ Quadrature<dim>::Quadrature(const unsigned int n_q)
 template <int dim>
 void
 Quadrature<dim>::initialize(const std::vector<Point<dim>> &p,
-                            const std::vector<double> &    w)
+                            const std::vector<double>     &w)
 {
   AssertDimension(w.size(), p.size());
   quadrature_points      = p;
@@ -62,7 +62,7 @@ Quadrature<dim>::initialize(const std::vector<Point<dim>> &p,
 
 template <int dim>
 Quadrature<dim>::Quadrature(const std::vector<Point<dim>> &points,
-                            const std::vector<double> &    weights)
+                            const std::vector<double>     &weights)
   : quadrature_points(points)
   , weights(weights)
   , is_tensor_product_flag(dim == 1)
@@ -234,29 +234,36 @@ Quadrature<dim>::Quadrature(const Quadrature<dim != 1 ? 1 : 0> &q)
   , weights(Utilities::fixed_power<dim>(q.size()))
   , is_tensor_product_flag(true)
 {
-  Assert(dim <= 3, ExcNotImplemented());
+  Assert(dim <= 4, ExcNotImplemented());
 
   const unsigned int n0 = q.size();
   const unsigned int n1 = (dim > 1) ? n0 : 1;
   const unsigned int n2 = (dim > 2) ? n0 : 1;
+  const unsigned int n3 = (dim > 3) ? n0 : 1;
 
   unsigned int k = 0;
-  for (unsigned int i2 = 0; i2 < n2; ++i2)
-    for (unsigned int i1 = 0; i1 < n1; ++i1)
-      for (unsigned int i0 = 0; i0 < n0; ++i0)
-        {
-          quadrature_points[k](0) = q.point(i0)(0);
-          if (dim > 1)
-            quadrature_points[k](1) = q.point(i1)(0);
-          if (dim > 2)
-            quadrature_points[k](2) = q.point(i2)(0);
-          weights[k] = q.weight(i0);
-          if (dim > 1)
-            weights[k] *= q.weight(i1);
-          if (dim > 2)
-            weights[k] *= q.weight(i2);
-          ++k;
-        }
+  for (unsigned int i3 = 0; i3 < n3; ++i3)
+    for (unsigned int i2 = 0; i2 < n2; ++i2)
+      for (unsigned int i1 = 0; i1 < n1; ++i1)
+        for (unsigned int i0 = 0; i0 < n0; ++i0)
+          {
+            quadrature_points[k](0) = q.point(i0)(0);
+            if (dim > 1)
+              quadrature_points[k](1) = q.point(i1)(0);
+            if (dim > 2)
+              quadrature_points[k](2) = q.point(i2)(0);
+            if (dim > 3)
+              quadrature_points[k](3) = q.point(i3)(0);
+
+            weights[k] = q.weight(i0);
+            if (dim > 1)
+              weights[k] *= q.weight(i1);
+            if (dim > 2)
+              weights[k] *= q.weight(i2);
+            if (dim > 3)
+              weights[k] *= q.weight(i3);
+            ++k;
+          }
 
   tensor_basis = std::make_unique<std::array<Quadrature<1>, dim>>();
   for (unsigned int i = 0; i < dim; ++i)
@@ -491,7 +498,7 @@ QIterated<0>::QIterated(const Quadrature<1> &, const unsigned int)
 
 
 template <>
-QIterated<1>::QIterated(const Quadrature<1> &        base_quadrature,
+QIterated<1>::QIterated(const Quadrature<1>         &base_quadrature,
                         const std::vector<Point<1>> &intervals)
   : Quadrature<1>(
       internal::QIteratedImplementation::uses_both_endpoints(base_quadrature) ?
@@ -618,7 +625,7 @@ QIterated<1>::QIterated(const Quadrature<1> &base_quadrature,
 // construct higher dimensional quadrature formula by tensor product
 // of lower dimensional iterated quadrature formulae
 template <int dim>
-QIterated<dim>::QIterated(const Quadrature<1> &        base_quadrature,
+QIterated<dim>::QIterated(const Quadrature<1>         &base_quadrature,
                           const std::vector<Point<1>> &intervals)
   : Quadrature<dim>(QIterated<dim - 1>(base_quadrature, intervals),
                     QIterated<1>(base_quadrature, intervals))
@@ -640,6 +647,7 @@ template class Quadrature<0>;
 template class Quadrature<1>;
 template class Quadrature<2>;
 template class Quadrature<3>;
+template class Quadrature<4>;
 template class QAnisotropic<1>;
 template class QAnisotropic<2>;
 template class QAnisotropic<3>;
